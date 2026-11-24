@@ -1,0 +1,74 @@
+alert_rules:
+  critical_threat:
+    name: "Critical Threat Detected"
+    severity: critical
+    notification_channels:
+      - email
+      - slack
+      - sms
+    escalation: true
+    escalation_delay_minutes: 5
+
+  high_anomaly:
+    name: "High Risk Anomaly"
+    severity: high
+    notification_channels:
+      - email
+      - slack
+    escalation: false
+
+  brute_force:
+    name: "Brute Force Attack Detected"
+    severity: high
+    notification_channels:
+      - email
+      - slack
+    escalation: true
+    escalation_delay_minutes: 10
+
+  port_scan:
+    name: "Port Scan Detected"
+    severity: medium
+    notification_channels:
+      - slack
+    escalation: false
+
+  ddos_attack:
+    name: "DDoS Attack Detected"
+    severity: critical
+    notification_channels:
+      - email
+      - slack
+      - sms
+    escalation: true
+    escalation_delay_minutes: 1
+
+notification_settings:
+  email:
+    enabled: false
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    from_address: "siem-alerts@company.com"
+    recipients:
+      - "security-team@company.com"
+  
+  slack:
+    enabled: false
+    webhook_url: ""
+    channel: "#security-alerts"
+  
+  sms:
+    enabled: false
+    provider: "twilio"
+    account_sid: ""
+    auth_token: ""
+    from_number: ""
+    recipients: []
+
+deduplication:
+  enabled: true
+  window_seconds: 300
+  group_by:
+    - threat_type
+    - source_ip
+    - anomaly_type

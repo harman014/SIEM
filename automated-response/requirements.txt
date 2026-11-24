@@ -1,0 +1,2 @@
+redis==5.0.1
+elasticsearch==8.11.0
