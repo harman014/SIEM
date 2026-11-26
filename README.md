@@ -1,10 +1,11 @@
 # 🛡️ AI-Powered SIEM: Real-Time Security Monitoring, Threat Intelligence & Anomaly Detection Platform
 
-[![Docker Compose](https://img.shields.io/badge/Docker%20Compose-9%20Services-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
+[![Docker Compose](https://img.shields.io/badge/Docker%20Compose-10%20Services-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
 [![Elasticsearch](https://img.shields.io/badge/Elasticsearch-8.11.0-005571?logo=elasticsearch&logoColor=white)](elasticsearch/config/elasticsearch.yml)
 [![Kibana](https://img.shields.io/badge/Kibana-8.11.0-005571?logo=kibana&logoColor=white)](kibana/config/kibana.yml)
 [![Logstash](https://img.shields.io/badge/Logstash-8.11.0-005571?logo=logstash&logoColor=white)](logstash/pipeline/main.conf)
 [![Grafana](https://img.shields.io/badge/Grafana-10.2.0-F46800?logo=grafana&logoColor=white)](grafana/config/grafana.ini)
+[![FastAPI](https://img.shields.io/badge/Frontend-FastAPI%20%3A8080-009688?logo=fastapi&logoColor=white)](frontend/main.py)
 [![Redis](https://img.shields.io/badge/Redis-7%20Alpine-DC382D?logo=redis&logoColor=white)](docker-compose.yml)
 [![Python](https://img.shields.io/badge/Python-ML%20%26%20SOAR-3776AB?logo=python&logoColor=white)](anomaly-detection/main.py)
 
@@ -19,7 +20,8 @@ An end-to-end, containerized **Security Information and Event Management (SIEM)*
 - **Signature-Based Threat Detection** — Continuously correlates events in Elasticsearch for Brute Force, Port Scans, DDoS, Privilege Escalation, Malware, and Data Exfiltration.
 - **Real-Time Alerting & Deduplication** — Routes and deduplicates alerts over Redis pub/sub and queues with configurable severity rules (`email`, `slack`, `sms` hooks).
 - **Automated Incident Response (SOAR)** — Listens on the Redis `alerts` channel and automatically blocks high/critical attacker IPs and ports using an `iptables` `SIEM_BLOCK` chain.
-- **Interactive Security Dashboards** — Visualizes logs, threats, anomalies, and response actions in both **Kibana** and **Grafana**.
+- **Custom SOC Web Dashboard (`:8080`)** — Clean light-themed FastAPI + Chart.js web console for real-time KPIs, threat & anomaly graphs, SOAR blocked IPs, alert feeds, and Lucene raw log search with 30s auto-refresh.
+- **Interactive Security Dashboards** — Visualizes logs, threats, anomalies, and response actions in **Kibana** and **Grafana**.
 
 ---
 
@@ -30,6 +32,7 @@ flowchart LR
     Sources["Log Sources\n(TCP JSON / UDP Syslog / .log Files)"] --> Logstash["Logstash :5000\nParse + GeoIP"]
     Logstash --> ES[("Elasticsearch :9200\nsiem-logs-*")]
 
+    ES --> Frontend["SIEM Web Dashboard :8080\nFastAPI + Live Analytics"]
     ES --> Kibana["Kibana :5601\nLog Discovery"]
     ES --> Grafana["Grafana :3000\nSecurity Dashboards"]
     ES --> Anomaly["Anomaly Detector\nIsolation Forest ML"]
@@ -50,6 +53,7 @@ flowchart LR
 
 | Service | Container | Purpose | Port / Access |
 |---|---|---|---|
+| **Frontend Dashboard** | `ai-siem-frontend` | Light-themed SOC web UI & FastAPI proxy | [`http://localhost:8080`](http://localhost:8080) |
 | **Elasticsearch** | `ai-siem-elasticsearch` | Search engine & security data lake | [`http://localhost:9200`](http://localhost:9200) |
 | **Kibana** | `ai-siem-kibana` | Log exploration & visualization | [`http://localhost:5601`](http://localhost:5601) |
 | **Logstash** | `ai-siem-logstash` | Log parsing, GeoIP & indexing pipeline | `5000` (TCP/UDP), API `:9600` |
@@ -103,12 +107,26 @@ docker compose ps
 ### 4. Open Dashboards
 | Interface | URL | Default Credentials |
 |---|---|---|
+| **SIEM Web Dashboard** | http://localhost:8080 | No auth (direct SOC UI) |
 | **Kibana** | http://localhost:5601 | `elastic` / `change_me_elastic_password` |
 | **Grafana** | http://localhost:3000 | `admin` / `change_me_grafana_password` |
 | **Elasticsearch** | http://localhost:9200 | No auth locally (`xpack.security.enabled: false`) |
 | **Logstash Monitoring** | http://localhost:9600 | No auth |
 
 > ⚠️ **Security Note:** Change the placeholder passwords (`change_me_elastic_password`, `change_me_grafana_password`, `change_me_redis_password`) in [docker-compose.yml](docker-compose.yml) before deploying outside localhost.
+
+---
+
+## 🖥️ Web Dashboard (`http://localhost:8080`)
+
+Built with **FastAPI**, **Jinja2**, and **Chart.js** ([`frontend/main.py`](frontend/main.py), [`frontend/templates/index.html`](frontend/templates/index.html)):
+
+- **Live KPI Cards** — Total Logs, Threats Detected, Blocked Attacks, and Cluster Uptime/Status.
+- **Graph Analyzers** — Threat Overview dual-line chart (Normal vs. Anomalies), Severity Distribution doughnut, Anomaly Score Trend, and Threat Types breakdown.
+- **Live Feeds & Tables** — Recent Alerts, Threat Intelligence Feed, Anomaly Detection Feed, and SOAR Automated Response / Blocked IPs.
+- **System Pipeline & Quick Actions** — Visualizes `Ingestion → Storage → Detection → Response` with one-click analysis refresh.
+- **Raw Log Search** — Query `siem-logs-*` directly using Lucene syntax (e.g., `event_type:"authentication_failed"` or `src_ip:"192.168.1.50"`).
+- **Auto-Refresh** — Automatically polls Elasticsearch every 30 seconds with selectable time ranges (`1h`, `6h`, `24h`, `7d`).
 
 ---
 
@@ -161,7 +179,12 @@ docker compose down
 
 ```text
 SIEM/
-├── docker-compose.yml              # 9-service SIEM orchestration
+├── docker-compose.yml              # 10-service SIEM orchestration
+├── frontend/                       # FastAPI + Chart.js SOC Web Dashboard (:8080)
+│   ├── Dockerfile
+│   ├── main.py                     # Elasticsearch proxy API & template server
+│   ├── requirements.txt
+│   └── templates/index.html        # Light-themed SOC dashboard UI
 ├── siem-client.py                  # Python CLI for querying alerts, threats & stats
 ├── test_blocking.py                # Automated response test suite
 ├── quick-start.sh                  # Automated Linux/macOS startup script

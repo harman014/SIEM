@@ -226,6 +226,26 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # SIEM Frontend Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ai-siem-frontend
+    environment:
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
+      - ELASTICSEARCH_USER=elastic
+      - ELASTICSEARCH_PASSWORD=change_me_elastic_password
+    ports:
+      - "8080:8080"
+    networks:
+      - siem-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: unless-stopped
+
 networks:
   siem-network:
     driver: bridge
