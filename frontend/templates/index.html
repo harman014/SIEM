@@ -1117,13 +1117,15 @@ async function loadBlocked(){
     if(!data.length){ $('blocked-body').innerHTML=emptyRow(5,'No SOAR actions recorded'); return; }
     $('blocked-body').innerHTML=data.map(b=>{
       const act=b.action||b.action_type||'block';
-      const col=act==='block'?'#c0392b':act==='unblock'?'#276749':'#3b6fd4';
+      const col=act.startsWith('block')?'#c0392b':act.startsWith('unblock')?'#276749':'#3b6fd4';
+      const target=b.target||b.target_ip||b.blocked_ip||b.ip||'—';
+      const dur=b.duration_minutes?`${b.duration_minutes}m`:(b.duration||b.block_duration||'—');
       return `<tr>
         <td class="ts">${fmtTs(b.timestamp||b['@timestamp'])}</td>
         <td style="font-weight:700;color:${col};text-transform:uppercase;font-size:11px;letter-spacing:.5px">${esc(act)}</td>
-        <td><span class="ip-tag">${esc(b.target_ip||b.blocked_ip||b.ip||'—')}${b.port?':'+b.port:''}</span></td>
+        <td><span class="ip-tag">${esc(target)}${b.port?':'+b.port:''}</span></td>
         <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(b.reason)}">${esc(b.reason||'—')}</td>
-        <td>${esc(b.duration||b.block_duration||'—')}</td>
+        <td>${esc(dur)}</td>
       </tr>`;
     }).join('');
   }catch{ $('blocked-body').innerHTML=emptyRow(5,'Failed to load data'); }

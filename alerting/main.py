@@ -71,6 +71,16 @@ class AlertingEngine:
                 'action': ['elasticsearch', 'redis_channel'],
                 'escalate': True
             },
+            'high_threat': {
+                'condition': lambda alert: alert.get('severity') == 'high',
+                'action': ['elasticsearch', 'redis_channel'],
+                'escalate': True
+            },
+            'medium_threat': {
+                'condition': lambda alert: alert.get('severity') == 'medium',
+                'action': ['elasticsearch', 'redis_channel'],
+                'escalate': False
+            },
             'high_anomaly': {
                 'condition': lambda alert: alert.get('anomaly_score', 0) < -0.5,
                 'action': ['elasticsearch', 'redis_channel'],
@@ -86,14 +96,18 @@ class AlertingEngine:
     def process_threat_alert(self, threat: Dict) -> Optional[Dict]:
         """Process threat and create alert"""
         try:
+            now_iso = datetime.utcnow().isoformat()
             alert = {
                 'alert_id': f"threat-{int(time.time() * 1000)}",
                 'type': 'threat',
                 'threat_type': threat.get('type'),
                 'severity': threat.get('severity'),
                 'source_ip': threat.get('source_ip'),
+                'dst_port': threat.get('dst_port'),
+                'attempt_count': threat.get('attempt_count', 0),
                 'description': threat.get('description'),
-                'timestamp': datetime.utcnow().isoformat(),
+                'timestamp': now_iso,
+                '@timestamp': now_iso,
                 'status': 'open',
                 'source': threat
             }
@@ -107,13 +121,15 @@ class AlertingEngine:
     def process_anomaly_alert(self, anomaly: Dict) -> Optional[Dict]:
         """Process anomaly and create alert"""
         try:
+            now_iso = datetime.utcnow().isoformat()
             alert = {
                 'alert_id': f"anomaly-{int(time.time() * 1000)}",
                 'type': 'anomaly',
                 'anomaly_score': anomaly.get('anomaly_score'),
                 'severity': anomaly.get('severity'),
                 'description': f"Anomaly detected with score {anomaly.get('anomaly_score'):.3f}",
-                'timestamp': datetime.utcnow().isoformat(),
+                'timestamp': now_iso,
+                '@timestamp': now_iso,
                 'status': 'open',
                 'source': anomaly
             }
